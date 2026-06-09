@@ -9,11 +9,19 @@ import java.util.Base64;
 
 public class KeypairService {
 
-    private static final int KEY_SIZE = 4096;
+    private final int keySize;
+
+    public KeypairService() {
+        this(4096);
+    }
+
+    KeypairService(int keySize) {
+        this.keySize = keySize;
+    }
 
     public KeyPair generateKeyPair() throws NoSuchAlgorithmException {
         KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
-        gen.initialize(KEY_SIZE);
+        gen.initialize(keySize);
         return gen.generateKeyPair();
     }
 

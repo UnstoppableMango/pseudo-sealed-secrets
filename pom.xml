@@ -88,6 +88,12 @@
             <scope>test</scope>
             <version>${junit.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>kubernetes-server-mock</artifactId>
+            <version>${fabric8-client.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
