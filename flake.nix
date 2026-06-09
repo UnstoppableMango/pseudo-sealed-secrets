@@ -28,6 +28,7 @@
           devShells.default = pkgs.mkShellNoCC {
             packages = with pkgs; [
               gnumake
+	      maven
               nixfmt
             ];
           };
