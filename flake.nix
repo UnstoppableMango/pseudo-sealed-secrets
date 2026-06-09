@@ -24,7 +24,12 @@
 
       perSystem =
         { pkgs, ... }:
+        let
+          operator = pkgs.callPackage ./nix/default.nix { };
+        in
         {
+          packages.default = operator;
+
           devShells.default = pkgs.mkShellNoCC {
             packages = with pkgs; [
               gnumake
