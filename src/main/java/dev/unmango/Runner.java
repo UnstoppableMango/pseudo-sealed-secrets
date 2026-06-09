@@ -47,6 +47,17 @@ public class Runner {
     }
 
     private static void runOperator() {
+        var client = new KubernetesClientBuilder().build();
+        String namespace = resolveNamespace();
+
+        var sealService = new SealService(client, namespace);
+        var apiServer = new ApiServer(sealService);
+        try {
+            apiServer.start();
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("Failed to start API server", e);
+        }
+
         Operator operator = new Operator();
         operator.register(new PseudoSealedSecretsReconciler());
         operator.start();

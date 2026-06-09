@@ -30,5 +30,8 @@ securityContext:
 
 resources: {}
 
+service:
+  port: 8080
+
 rbac:
   create: true
