@@ -33,8 +33,11 @@
           devShells.default = pkgs.mkShellNoCC {
             packages = with pkgs; [
               gnumake
+	      kind
 	      maven
               nixfmt
+	      podman
+	      skopeo
             ];
           };
 
