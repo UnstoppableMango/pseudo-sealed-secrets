@@ -32,11 +32,21 @@ public class Runner {
             Path.of("/var/run/secrets/kubernetes.io/serviceaccount/namespace");
 
     public static void main(String[] args) {
+        if (args.length > 0 && args[0].equals("bootstrap")) {
+            runBootstrap();
+        } else {
+            runOperator();
+        }
+    }
+
+    private static void runBootstrap() {
         var client = new KubernetesClientBuilder().build();
         String namespace = resolveNamespace();
         log.info("Bootstrapping keypair in namespace {}", namespace);
         new KeypairBootstrapper(client).bootstrap(namespace);
+    }
 
+    private static void runOperator() {
         Operator operator = new Operator();
         operator.register(new PseudoSealedSecretsReconciler());
         operator.start();

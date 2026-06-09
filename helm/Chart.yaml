@@ -1,0 +1,6 @@
+apiVersion: v2
+name: pseudo-sealed-secrets
+description: Helm chart for the pseudo-sealed-secrets operator
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

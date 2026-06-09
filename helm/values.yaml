@@ -1,0 +1,34 @@
+replicaCount: 1
+
+image:
+  repository: pseudo-sealed-secrets
+  pullPolicy: Never
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: "pseudo-sealed-secrets"
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  fsGroup: 9999
+  runAsUser: 9999
+  runAsGroup: 9999
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+
+resources: {}
+
+rbac:
+  create: true
