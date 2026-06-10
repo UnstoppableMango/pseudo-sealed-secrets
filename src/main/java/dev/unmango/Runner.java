@@ -59,7 +59,7 @@ public class Runner {
         }
 
         Operator operator = new Operator();
-        operator.register(new PseudoSealedSecretsReconciler());
+        operator.register(new SealedSecretReconciler());
         operator.start();
         log.info("Operator started.");
     }
