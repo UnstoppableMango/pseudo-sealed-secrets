@@ -7,6 +7,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Map;
 
 import static dev.unmango.SealedSecretReconciler.TARGET_ANNOTATION;
@@ -51,7 +53,9 @@ class SealRoundTripIntegrationTest {
         await().untilAsserted(() -> {
             Secret unsealed = extension.get(Secret.class, "my-secret");
             assertThat(unsealed).isNotNull();
-            assertThat(unsealed.getStringData()).containsEntry("password", "hunter2");
+            assertThat(unsealed.getData()).containsKey("password");
+            String decoded = new String(Base64.getDecoder().decode(unsealed.getData().get("password")), StandardCharsets.UTF_8);
+            assertThat(decoded).isEqualTo("hunter2");
         });
     }
 }

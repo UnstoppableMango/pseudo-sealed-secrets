@@ -5,9 +5,12 @@ import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.OAEPParameterSpec;
 import javax.crypto.spec.PSource;
 import javax.crypto.spec.SecretKeySpec;
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
+import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.MGF1ParameterSpec;
+import java.util.Arrays;
 
 public class EncryptionService {
 
@@ -54,5 +57,25 @@ public class EncryptionService {
         System.arraycopy(nonce, 0, result, encryptedKey.length, nonce.length);
         System.arraycopy(aesCiphertext, 0, result, encryptedKey.length + nonce.length, aesCiphertext.length);
         return result;
+    }
+
+    public byte[] hybridDecrypt(PrivateKey privateKey, byte[] ciphertext, byte[] label) throws Exception {
+        int rsaKeyBytes = ((RSAPrivateKey) privateKey).getModulus().bitLength() / 8;
+        byte[] encryptedKey = Arrays.copyOfRange(ciphertext, 0, rsaKeyBytes);
+        byte[] nonce = Arrays.copyOfRange(ciphertext, rsaKeyBytes, rsaKeyBytes + GCM_NONCE_SIZE);
+        byte[] aesCiphertext = Arrays.copyOfRange(ciphertext, rsaKeyBytes + GCM_NONCE_SIZE, ciphertext.length);
+
+        OAEPParameterSpec oaepSpec = new OAEPParameterSpec(
+                "SHA-256", "MGF1", MGF1ParameterSpec.SHA256,
+                new PSource.PSpecified(label));
+        Cipher rsaCipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
+        rsaCipher.init(Cipher.DECRYPT_MODE, privateKey, oaepSpec);
+        byte[] sessionKey = rsaCipher.doFinal(encryptedKey);
+
+        Cipher aesCipher = Cipher.getInstance("AES/GCM/NoPadding");
+        aesCipher.init(Cipher.DECRYPT_MODE,
+                new SecretKeySpec(sessionKey, "AES"),
+                new GCMParameterSpec(GCM_TAG_BITS, nonce));
+        return aesCipher.doFinal(aesCiphertext);
     }
 }

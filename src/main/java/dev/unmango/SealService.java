@@ -3,10 +3,12 @@ package dev.unmango;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 
-import java.security.KeyFactory;
+import java.io.StringReader;
 import java.security.PublicKey;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,20 +38,11 @@ public class SealService {
             throw new IllegalStateException("Keypair secret not found in namespace " + namespace);
         }
 
-        String pem = keypairSecret.getData().get("tls.crt");
-        byte[] der = Base64.getDecoder().decode(pem);
-        // Strip PEM headers if present (keypair is stored as PEM in stringData but read back as base64)
-        // The secret stores PEM in stringData which k8s base64-encodes, so we decode and strip headers
-        String pemStr = new String(der);
-        if (pemStr.startsWith("-----")) {
-            String stripped = pemStr
-                    .replaceAll("-----BEGIN PUBLIC KEY-----", "")
-                    .replaceAll("-----END PUBLIC KEY-----", "")
-                    .replaceAll("\\s+", "");
-            der = Base64.getDecoder().decode(stripped);
+        String pem = new String(Base64.getDecoder().decode(keypairSecret.getData().get("tls.crt")));
+        try (PEMParser parser = new PEMParser(new StringReader(pem))) {
+            SubjectPublicKeyInfo keyInfo = (SubjectPublicKeyInfo) parser.readObject();
+            return new JcaPEMKeyConverter().getPublicKey(keyInfo);
         }
-
-        return KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(der));
     }
 
     public String getPublicKeyPem() {
