@@ -1,11 +1,17 @@
 package dev.unmango;
 
+import org.bouncycastle.util.io.pem.PemObject;
+import org.bouncycastle.util.io.pem.PemWriter;
+
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.UncheckedIOException;
+import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.util.Base64;
 
 public class KeypairService {
 
@@ -26,12 +32,20 @@ public class KeypairService {
     }
 
     public String toPrivateKeyPem(PrivateKey key) {
-        String encoded = Base64.getMimeEncoder(64, new byte[]{'\n'}).encodeToString(key.getEncoded());
-        return "-----BEGIN PRIVATE KEY-----\n" + encoded + "\n-----END PRIVATE KEY-----\n";
+        return toPem("PRIVATE KEY", key);
     }
 
     public String toPublicKeyPem(PublicKey key) {
-        String encoded = Base64.getMimeEncoder(64, new byte[]{'\n'}).encodeToString(key.getEncoded());
-        return "-----BEGIN PUBLIC KEY-----\n" + encoded + "\n-----END PUBLIC KEY-----\n";
+        return toPem("PUBLIC KEY", key);
+    }
+
+    private String toPem(String type, Key key) {
+        StringWriter sw = new StringWriter();
+        try (PemWriter writer = new PemWriter(sw)) {
+            writer.writeObject(new PemObject(type, key.getEncoded()));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return sw.toString();
     }
 }
