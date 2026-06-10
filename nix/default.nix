@@ -13,7 +13,7 @@ maven.buildMavenPackage {
   inherit version;
 
   src = lib.cleanSource ../.;
-  mvnHash = "sha256-a2XYiaanHX67/QGC7Li7tQM7HbZ38x/1ntu0e525ISI=";
+  mvnHash = "sha256-WONgvKVO1tSocaQIeqTA/uzWm4Sx5y0fo/worAavsjo=";
 
   nativeBuildInputs = [ makeWrapper ];
 
