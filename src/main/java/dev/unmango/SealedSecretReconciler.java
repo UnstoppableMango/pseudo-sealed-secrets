@@ -8,11 +8,6 @@ import io.javaoperatorsdk.operator.api.reconciler.ControllerConfiguration;
 import io.javaoperatorsdk.operator.api.reconciler.Reconciler;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 
-import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
-import org.bouncycastle.openssl.PEMParser;
-import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
-
-import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.util.Base64;
@@ -37,7 +32,7 @@ public class SealedSecretReconciler implements Reconciler<Secret> {
         byte[] label = (namespace + "/" + sealedName).getBytes(StandardCharsets.UTF_8);
 
         KubernetesClient client = context.getClient();
-        PrivateKey privateKey = loadPrivateKey(client, namespace);
+        PrivateKey privateKey = SealService.loadPrivateKey(client, namespace);
         EncryptionService encryptionService = new EncryptionService();
 
         Map<String, String> decryptedData = new HashMap<>();
@@ -60,21 +55,5 @@ public class SealedSecretReconciler implements Reconciler<Secret> {
         client.secrets().inNamespace(namespace).resource(target).createOrReplace();
 
         return UpdateControl.noUpdate();
-    }
-
-    private PrivateKey loadPrivateKey(KubernetesClient client, String namespace) throws Exception {
-        Secret keypairSecret = client.secrets()
-                .inNamespace(namespace)
-                .withName(KeypairBootstrapper.SECRET_NAME)
-                .get();
-        if (keypairSecret == null) {
-            throw new IllegalStateException("Keypair secret not found in namespace " + namespace);
-        }
-
-        String pem = new String(Base64.getDecoder().decode(keypairSecret.getData().get("tls.key")));
-        try (PEMParser parser = new PEMParser(new StringReader(pem))) {
-            PrivateKeyInfo keyInfo = (PrivateKeyInfo) parser.readObject();
-            return new JcaPEMKeyConverter().getPrivateKey(keyInfo);
-        }
     }
 }

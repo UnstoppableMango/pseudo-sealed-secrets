@@ -27,22 +27,21 @@ public class Runner {
     private static final Logger log = LoggerFactory.getLogger(Runner.class);
 
     public static void main(String[] args) {
+        KubernetesClient client = new KubernetesClientBuilder().build();
         if (args.length > 0 && args[0].equals("bootstrap")) {
-            runBootstrap();
+            runBootstrap(client);
         } else {
-            runOperator();
+            runOperator(client);
         }
     }
 
-    private static void runBootstrap() {
-        var client = new KubernetesClientBuilder().build();
+    private static void runBootstrap(KubernetesClient client) {
         String namespace = client.getConfiguration().getNamespace();
         log.info("Bootstrapping keypair in namespace {}", namespace);
         new KeypairBootstrapper(client).bootstrap(namespace);
     }
 
-    private static void runOperator() {
-        KubernetesClient client = new KubernetesClientBuilder().build();
+    private static void runOperator(KubernetesClient client) {
         String namespace = client.getConfiguration().getNamespace();
 
         var sealService = new SealService(client, namespace);

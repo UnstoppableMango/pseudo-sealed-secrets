@@ -3,11 +3,13 @@ package dev.unmango;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 
 import java.io.StringReader;
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Base64;
 import java.util.HashMap;
@@ -29,23 +31,35 @@ public class SealService {
         this.encryptionService = encryptionService;
     }
 
-    public PublicKey loadPublicKey() throws Exception {
-        Secret keypairSecret = client.secrets()
-                .inNamespace(namespace)
-                .withName(KeypairBootstrapper.SECRET_NAME)
-                .get();
-        if (keypairSecret == null) {
-            throw new IllegalStateException("Keypair secret not found in namespace " + namespace);
-        }
+    public PrivateKey loadPrivateKey() throws Exception {
+        return loadPrivateKey(client, namespace);
+    }
 
-        String pem = new String(Base64.getDecoder().decode(keypairSecret.getData().get("tls.crt")));
+    public PublicKey loadPublicKey() throws Exception {
+        return loadPublicKey(client, namespace);
+    }
+
+    public String getPublicKeyPem() {
+        return getPublicKeyPem(client, namespace);
+    }
+
+    public static PrivateKey loadPrivateKey(KubernetesClient client, String namespace) throws Exception {
+        String pem = getPrivateKeyPem(client, namespace);
+        try (PEMParser parser = new PEMParser(new StringReader(pem))) {
+            PrivateKeyInfo keyInfo = (PrivateKeyInfo) parser.readObject();
+            return new JcaPEMKeyConverter().getPrivateKey(keyInfo);
+        }
+    }
+
+    public static PublicKey loadPublicKey(KubernetesClient client, String namespace) throws Exception {
+        String pem = getPublicKeyPem(client, namespace);
         try (PEMParser parser = new PEMParser(new StringReader(pem))) {
             SubjectPublicKeyInfo keyInfo = (SubjectPublicKeyInfo) parser.readObject();
             return new JcaPEMKeyConverter().getPublicKey(keyInfo);
         }
     }
 
-    public String getPublicKeyPem() {
+    public static String getPrivateKeyPem(KubernetesClient client, String namespace) {
         Secret keypairSecret = client.secrets()
                 .inNamespace(namespace)
                 .withName(KeypairBootstrapper.SECRET_NAME)
@@ -53,8 +67,18 @@ public class SealService {
         if (keypairSecret == null) {
             throw new IllegalStateException("Keypair secret not found in namespace " + namespace);
         }
-        String encoded = keypairSecret.getData().get("tls.crt");
-        return new String(Base64.getDecoder().decode(encoded));
+        return new String(Base64.getDecoder().decode(keypairSecret.getData().get("tls.key")));
+    }
+
+    public static String getPublicKeyPem(KubernetesClient client, String namespace) {
+        Secret keypairSecret = client.secrets()
+                .inNamespace(namespace)
+                .withName(KeypairBootstrapper.SECRET_NAME)
+                .get();
+        if (keypairSecret == null) {
+            throw new IllegalStateException("Keypair secret not found in namespace " + namespace);
+        }
+        return new String(Base64.getDecoder().decode(keypairSecret.getData().get("tls.crt")));
     }
 
     public Secret sealSecret(Secret secret) throws Exception {

@@ -22,18 +22,19 @@ class SealRoundTripIntegrationTest {
             .withReconciler(SealedSecretReconciler.class)
             .build();
 
+    private SealService sealService;
+
     @BeforeEach
     void bootstrapKeypair() {
         String ns = extension.getNamespace();
         new KeypairBootstrapper(extension.getKubernetesClient(), new KeypairService(2048))
                 .bootstrap(ns);
+        sealService = new SealService(extension.getKubernetesClient(), ns);
     }
 
     @Test
     void roundTripsArbitrarySecret() throws Exception {
         String ns = extension.getNamespace();
-
-        SealService sealService = new SealService(extension.getKubernetesClient(), ns);
         Secret original = new SecretBuilder()
                 .withNewMetadata()
                     .withName("my-secret-sealed")
