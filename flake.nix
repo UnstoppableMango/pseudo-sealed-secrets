@@ -14,6 +14,11 @@
       url = "github:numtide/treefmt-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    nix2container = {
+      url = "github:nlewo/nix2container";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -23,12 +28,19 @@
       imports = [ inputs.treefmt-nix.flakeModule ];
 
       perSystem =
-        { pkgs, ... }:
+        { pkgs, inputs', ... }:
         let
           operator = pkgs.callPackage ./nix/default.nix { };
+          n2c = inputs'.nix2container.packages.nix2container;
         in
         {
           packages.default = operator;
+
+          packages.image = n2c.buildImage {
+            name = "pseudo-sealed-secrets";
+            tag = "latest";
+            config.Entrypoint = [ "${operator}/bin/pseudo-sealed-secrets" ];
+          };
 
           devShells.default = pkgs.mkShellNoCC {
             packages = with pkgs; [

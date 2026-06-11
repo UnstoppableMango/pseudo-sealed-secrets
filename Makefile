@@ -1,10 +1,10 @@
 KIND_CLUSTER_NAME ?= pseudo-sealed-secrets
 KIND_KUBECONFIG   := .kind/kubeconfig
-CRD_DIR           := target/classes/META-INF/fabric8
+HELM_RELEASE      ?= pseudo-sealed-secrets
 
 export KIND_EXPERIMENTAL_PROVIDER = podman
 
-.PHONY: build update check lint format fmt test deploy deploy-crds run start-kind stop-kind
+.PHONY: build update check lint format fmt test deploy deploy-helm undeploy-helm load-image run start-kind stop-kind
 
 build:
 	nix build .#
@@ -21,15 +21,23 @@ format fmt:
 test:
 	mvn test
 
-$(CRD_DIR): pom.xml $(shell find src/main/java -name '*.java')
-	mvn compile -q
+load-image: $(KIND_KUBECONFIG)
+	nix run .#image.copyToDockerDaemon
+	kind load docker-image pseudo-sealed-secrets:latest \
+	  --name $(KIND_CLUSTER_NAME)
 
-deploy-crds: $(KIND_KUBECONFIG) $(CRD_DIR)
-	kubectl apply -f $(CRD_DIR) --kubeconfig=$(KIND_KUBECONFIG)
+deploy-helm: load-image
+	helm upgrade --install $(HELM_RELEASE) ./helm \
+	  --kubeconfig=$(KIND_KUBECONFIG) \
+	  --wait
 
-deploy: deploy-crds
+undeploy-helm:
+	helm uninstall $(HELM_RELEASE) \
+	  --kubeconfig=$(KIND_KUBECONFIG)
 
-run: deploy-crds
+deploy: deploy-helm
+
+run: $(KIND_KUBECONFIG)
 	KUBECONFIG=$(KIND_KUBECONFIG) mvn exec:java -Dexec.mainClass=dev.unmango.Runner
 
 $(KIND_KUBECONFIG): kind-config.yaml

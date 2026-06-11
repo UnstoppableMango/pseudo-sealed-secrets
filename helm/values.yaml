@@ -35,3 +35,6 @@ service:
 
 rbac:
   create: true
+
+test:
+  image: curlimages/curl:latest
